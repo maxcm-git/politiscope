@@ -14,7 +14,7 @@ Déroulé :
  4. Contrôler le site produit (nombre de députés, sénateurs, couverture des votes et des photos…).
  5. Écrire site/sources.json (date de chaque source) pour la page « Mises à jour ».
 Code de sortie : 0 si tout est bon, 1 si une source ou un contrôle échoue (pour une tâche planifiée)."""
-import collections, os, json, re, shutil, subprocess, sys, urllib.request, zipfile, datetime
+import collections, filecmp, os, json, re, shutil, subprocess, sys, urllib.request, zipfile, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -127,27 +127,43 @@ def lignes(path):
         return sum(1 for l in f if not l.startswith("%")) - 1
 
 
-def telecharger(url, dest, conversion):
+def complet(dest, taille):
+    # Un téléchargement coupé en route peut finir « sans erreur ». Archive : elle doit être lisible (une archive tronquée
+    # ne l'est jamais ; sa taille peut changer entre l'annonce et l'envoi si la source la régénère). Autres : taille annoncée.
+    if dest.suffix in (".zip", ".xlsx"):
+        if not zipfile.is_zipfile(dest):
+            raise IOError("archive incomplète")
+    elif taille and dest.stat().st_size != taille:
+        raise IOError(f"{dest.stat().st_size} octets reçus sur {taille}")
+
+
+def telecharger(url, dest, conversion, taille=0):
     dest.parent.mkdir(parents=True, exist_ok=True)
+    curl = ["curl", "-sfL", "--retry", "3", "--max-time", "1200", "-A", "Mozilla/5.0 (compatible; Politiscope; +contact@politiscope.example)"]
     if conversion == "curl":  # le site du Parlement européen refuse le client HTTP de Python
-        subprocess.run(["curl", "-s", "--max-time", "120", "-o", str(dest), url], check=True)
+        subprocess.run(curl + ["-o", str(dest), url], check=True)
         return
     for essai in range(3):  # coupures ponctuelles : on réessaie, puis on passe par curl (certains sites refusent urllib)
         try:
             with http(url) as r, open(dest, "wb") as f:
                 shutil.copyfileobj(r, f)
+            complet(dest, taille)
             break
         except Exception:
             if essai == 2:
-                subprocess.run(["curl", "-sfL", "--retry", "2", "--max-time", "900", "-o", str(dest), url], check=True)
+                subprocess.run(curl + ["-o", str(dest), url], check=True)
+                complet(dest, taille)
     if conversion == "latin1":
         dest.write_text(dest.read_bytes().decode("latin-1"), encoding="utf-8")
+
+
+FACULTATIVES = {"pe"}  # sans elle, le site retombe sur le RNE (eurodéputés) : son absence n'arrête pas la mise à jour
 
 
 def recuperer(force=False):
     etat = json.load(open(RAW / "sources.json", encoding="utf-8")) if (RAW / "sources.json").exists() else {}
     shutil.rmtree(STAGE, ignore_errors=True)
-    a_remplacer, problemes, nouvel_etat = [], [], {}
+    a_remplacer, problemes, avertissements, nouvel_etat = [], [], [], {}
     for sid, nom, apport, freq, fichiers in sources():
         prev = etat.get(sid, {})
         dates = []  # date de la source = la plus récente modification de ses fichiers
@@ -167,21 +183,35 @@ def recuperer(force=False):
                                               "lignes": ancien.get("lignes") or lignes(dest)}
                 continue
             tmp = STAGE / dest.name
+
+            def garder(raison):
+                # Source en échec : la dernière version vérifiée est conservée et le reste du site se met à jour ;
+                # sans version précédente, arrêt (sauf source facultative).
+                if dest.exists():
+                    avertissements.append(f"{nom} — {dest.name} : {raison} ; version précédente conservée")
+                    info["fichiers"][dest.name] = ancien or {"url": url, "lignes": lignes(dest)}
+                elif sid in FACULTATIVES:
+                    avertissements.append(f"{nom} — {dest.name} : {raison} ; source facultative ignorée")
+                else:
+                    problemes.append(f"{nom} — {dest.name} : {raison}")
             try:
-                telecharger(url, tmp, conv)
+                telecharger(url, tmp, conv, taille)
                 n = lignes(tmp)
             except Exception as e:
-                problemes.append(f"{nom} — {dest.name} : illisible ou injoignable ({e})")
+                garder(f"illisible ou injoignable ({e})")
                 continue
             plancher = max(MINIMUM.get(dest.name, 1), int(0.9 * (ancien.get("lignes") or 0)))
             if n < plancher:
-                problemes.append(f"{nom} — {dest.name} : {n} lignes, attendu au moins {plancher}")
+                garder(f"{n} lignes, attendu au moins {plancher}")
+                continue
+            if dest.exists() and filecmp.cmp(tmp, dest, shallow=False):  # contenu identique : rien de nouveau
+                info["fichiers"][dest.name] = {"url": url, "last_modified": lm, "taille": taille, "lignes": n}
                 continue
             a_remplacer.append((tmp, dest))
             info["fichiers"][dest.name] = {"url": url, "last_modified": lm, "taille": taille, "lignes": n}
         info["maj"] = max(dates) if dates else ""  # vide : la source ne communique pas sa date de modification
         nouvel_etat[sid] = info
-    return a_remplacer, problemes, nouvel_etat
+    return a_remplacer, problemes, avertissements, nouvel_etat
 
 
 def lancer(script):
@@ -223,7 +253,9 @@ def main():
         e = controler()
         sys.exit(1 if e else 0)
     print("1. Récupération et vérification des sources")
-    a_remplacer, problemes, etat = recuperer(force="--force" in sys.argv)
+    a_remplacer, problemes, avertissements, etat = recuperer(force="--force" in sys.argv)
+    for a in avertissements:
+        print("  ⚠", a)
     if problemes:
         print("ARRÊT — aucune donnée remplacée :")
         for p in problemes:

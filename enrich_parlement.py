@@ -171,15 +171,18 @@ def main():
     print(f"en exercice : {len(dep_roster)} députés (Assemblée), {len(sen_roster)} sénateurs (Sénat)")
     (RAW / "roster.json").write_text(json.dumps(dep_roster + sen_roster, ensure_ascii=False, indent=0), encoding="utf-8")
 
-    pe = {norm(m["fullName"]): m["persId"] for m in json.load(open(RAW / "pe_membres.json", encoding="utf-8"))["list"]
-          if m.get("countryLabel") == "France"}
+    membres = [m for m in json.load(open(RAW / "pe_membres.json", encoding="utf-8"))["list"] if m.get("countryLabel") == "France"] \
+        if (RAW / "pe_membres.json").exists() else []  # source facultative (update.py) : repli sur le RNE
+    pe = {norm(m["fullName"]): m["persId"] for m in membres}
     # Eurodéputés : la liste du Parlement européen fait foi (« Prénom NOM » : le nom est en capitales).
     euro = []
-    for nom_pe in pe:
-        m = next(m for m in json.load(open(RAW / "pe_membres.json", encoding="utf-8"))["list"] if norm(m["fullName"]) == nom_pe)
+    for m in membres:
         mots = m["fullName"].split()
         prenom, nom = " ".join(w for w in mots if not w.isupper()), " ".join(w for w in mots if w.isupper())
         euro.append((f"{norm(prenom)}|{norm(nom)}", m["fullName"]))
+    if not membres:
+        with open(RAW / "eurodeputes.csv", encoding="utf-8-sig") as fh:
+            euro = [(f"{norm(r[PRENOM])}|{norm(r[NOM])}", f"{r[PRENOM]} {r[NOM]}") for r in csv.DictReader(fh, delimiter=";")]
     execs = json.load(open(RAW / "executif.json", encoding="utf-8"))
 
     out, sources = {}, {}

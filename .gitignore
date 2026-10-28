@@ -22,3 +22,4 @@ __pycache__/
 # Captures du site de référence (analyse), non publiées
 Refs/
 Screenshots/
+data/_staging/
