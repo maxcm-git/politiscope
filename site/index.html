@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politiscope — les élus de la République, en données ouvertes</title>
+<meta name="description" content="Qui exerce un mandat en France aujourd'hui, de la mairie à l'Élysée, et ce que les institutions publient sur chacun. Données officielles, sans note ni classement.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 19' fill='%231f3f8f'%3E%3Ccircle cx='11' cy='17' r='1.6'/%3E%3Ccircle cx='12.5' cy='13.5' r='1.6'/%3E%3Ccircle cx='16' cy='12' r='1.6'/%3E%3Ccircle cx='19.5' cy='13.5' r='1.6'/%3E%3Ccircle cx='21' cy='17' r='1.6'/%3E%3Ccircle cx='7' cy='17' r='1.6'/%3E%3Ccircle cx='8.4' cy='10.4' r='1.6'/%3E%3Ccircle cx='16' cy='8' r='1.6'/%3E%3Ccircle cx='23.6' cy='10.4' r='1.6'/%3E%3Ccircle cx='25' cy='17' r='1.6'/%3E%3Ccircle cx='3' cy='17' r='1.6'/%3E%3Ccircle cx='5.5' cy='9.4' r='1.6'/%3E%3Ccircle cx='12' cy='4.6' r='1.6'/%3E%3Ccircle cx='20' cy='4.6' r='1.6'/%3E%3Ccircle cx='26.5' cy='9.4' r='1.6'/%3E%3Ccircle cx='29' cy='17' r='1.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css?v=48">
+</head>
+<body>
+<a class="evitement" href="#app">Aller au contenu</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="logo" href="#/" aria-label="Politiscope, accueil">
+      <svg viewBox="0 0 32 19" aria-hidden="true" fill="currentColor"><circle cx="11.0" cy="17.0" r="1.35"/><circle cx="12.5" cy="13.5" r="1.35"/><circle cx="16.0" cy="12.0" r="1.35"/><circle cx="19.5" cy="13.5" r="1.35"/><circle cx="21.0" cy="17.0" r="1.35"/><circle cx="7.0" cy="17.0" r="1.35"/><circle cx="7.9" cy="13.1" r="1.35"/><circle cx="10.4" cy="10.0" r="1.35"/><circle cx="14.0" cy="8.2" r="1.35"/><circle cx="18.0" cy="8.2" r="1.35"/><circle cx="21.6" cy="10.0" r="1.35"/><circle cx="24.1" cy="13.1" r="1.35"/><circle cx="25.0" cy="17.0" r="1.35"/><circle cx="3.0" cy="17.0" r="1.35"/><circle cx="3.6" cy="13.0" r="1.35"/><circle cx="5.5" cy="9.4" r="1.35"/><circle cx="8.4" cy="6.5" r="1.35"/><circle cx="12.0" cy="4.6" r="1.35"/><circle cx="16.0" cy="4.0" r="1.35"/><circle cx="20.0" cy="4.6" r="1.35"/><circle cx="23.6" cy="6.5" r="1.35"/><circle cx="26.5" cy="9.4" r="1.35"/><circle cx="28.4" cy="13.0" r="1.35"/><circle cx="29.0" cy="17.0" r="1.35"/></svg>
+      <span>Politiscope</span>
+    </a>
+    <div class="actions">
+      <a class="btn" href="#/moi">Qui me représente ?</a>
+      <button class="btn ghost" id="ecouter" title="Écouter la page" aria-pressed="false"><span aria-hidden="true">◖))</span><span class="txt">Écouter</span></button>
+      <button class="btn ghost" id="copier" title="Partager ou copier le lien de la page"><span aria-hidden="true">↗</span><span class="txt">Partager</span></button>
+      <button class="btn ghost" id="image" title="Créer une image de cette page à partager (story, carré)"><span aria-hidden="true">▣</span><span class="txt">Image</span></button>
+      <button class="btn ghost" id="theme" title="Mode clair ou sombre" aria-label="Basculer le mode clair ou sombre">◐</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <nav class="tabs" aria-label="Rubriques">
+      <a href="#/" data-r="carte">Carte</a>
+      <a href="#/annuaire" data-r="annuaire">Qui est qui</a>
+      <a href="#/moi" data-r="moi">Me représente</a>
+      <a href="#/parlement" data-r="parlement">Parlement en direct</a>
+      <a href="#/fonctions" data-r="fonctions">Qui fait quoi</a>
+      <a href="#/comparer" data-r="comparer">Comparer</a>
+      <a href="#/suivis" data-r="suivis">Mes élus</a>
+    </nav>
+  </div>
+  <div class="bandeau-suivi" id="bandeau-suivi" hidden><div class="wrap"><span class="etoile" aria-hidden="true">☆</span>
+    <span><b>Nouveau : suivez vos élus.</b> Créez un compte gratuit, puis touchez ☆ sur leur fiche pour les retrouver dans « Mes élus ».</span>
+    <a class="btn" href="#/suivis">Créer mon compte</a><button class="fermer" id="bandeau-fermer" aria-label="Masquer ce bandeau">×</button></div></div>
+  <div class="maj"><div class="wrap"><span class="proto">Prototype</span> <span id="maj"></span></div></div>
+</header>
+
+<main id="app" class="wrap" tabindex="-1"></main>
+
+<footer><div class="wrap">
+  <div class="pied">
+    <div><a class="logo" href="#/"><span>Politiscope</span></a>
+      <p>Qui exerce un mandat en France, et ce que les institutions publient sur chacun. Aucune note, aucun classement.</p></div>
+    <nav><a href="#/a-propos">À propos et méthode</a><a href="#/mises-a-jour">Mises à jour</a><a href="#/signaler">Signaler une erreur</a><a href="#/reponse">Droit de réponse</a></nav>
+  </div>
+  <p class="src">Sources : Répertoire national des élus (Ministère de l'Intérieur) · Assemblée nationale et Sénat (open data) ·
+  Parlement européen · HATVP · INSEE (code officiel géographique) · geo.api.gouv.fr · IGN (contours, via france-geojson).</p>
+  <p class="src">Neutralité : listes en ordre alphabétique, couleurs réservées au niveau d'institution ou au lieu, jamais au parti.
+  Déclarations de patrimoine non reprises : publiées par la HATVP pour le Président et le gouvernement, consultables en préfecture par les électeurs
+  pour les parlementaires, leur publication est interdite (loi n° 2013-907, art. 26). Contact provisoire : contact@politiscope.example</p>
+</div></footer>
+
+<script src="config.js?v=48"></script>
+<script src="data.js?v=48"></script>
+<script src="suivi.js?v=48"></script>
+<script src="partage.js?v=48"></script>
+<script src="app.js?v=48"></script>
+</body>
+</html>

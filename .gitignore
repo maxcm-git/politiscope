@@ -1,0 +1,24 @@
+# Téléchargements et fichiers régénérés à chaque mise à jour (le serveur de mise à jour les reconstruit)
+data/_cache/
+data/raw/*
+!data/raw/geo/
+data/raw/geo/*
+!data/raw/geo/circo_2017.xlsx
+!data/raw/geo/*.geojson
+!data/raw/photos_officielles/
+!data/raw/photos_officielles.json
+!data/raw/photos_officielles_rejets.json
+site/*
+!site/index.html
+!site/app.js
+!site/styles.css
+!site/suivi.js
+!site/partage.js
+!site/config.js
+!site/geo/
+__pycache__/
+.DS_Store
+
+# Captures du site de référence (analyse), non publiées
+Refs/
+Screenshots/

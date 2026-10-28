@@ -1,0 +1,64 @@
+# Mise à jour automatique : toutes les heures, GitHub télécharge les sources officielles, vérifie tout,
+# reconstruit le site s'il y a du nouveau, puis le publie sur GitHub Pages. Sans nouveauté : rien n'est republié.
+name: Mise à jour des données
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      complet:
+        description: "Tout retélécharger et reconstruire (--force)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: mise-a-jour
+  cancel-in-progress: false
+jobs:
+  maj:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment:
+      name: github-pages
+      url: ${{ steps.publication.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow==10.4.0
+      # Données du passage précédent (sources, archives, site construit) : évite de tout retélécharger.
+      - uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            data/_cache
+            data/raw
+            site
+          key: donnees-${{ github.run_id }}
+          restore-keys: donnees-
+      # Le cache ne doit jamais écraser le code ni les fichiers suivis par git (cartes, photos relues, références).
+      - run: git checkout -- .
+      - name: Mise à jour (téléchargement, vérification, reconstruction, contrôles)
+        id: maj
+        run: python update.py ${{ (steps.cache.outputs.cache-matched-key == '' || inputs.complet) && '--force' || '' }}
+      - uses: actions/cache/save@v4
+        if: steps.maj.outputs.nouveau == 'oui'
+        with:
+          path: |
+            data/_cache
+            data/raw
+            site
+          key: donnees-${{ github.run_id }}
+      - uses: actions/configure-pages@v5
+        if: steps.maj.outputs.nouveau == 'oui'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.maj.outputs.nouveau == 'oui'
+        with:
+          path: site
+      - id: publication
+        if: steps.maj.outputs.nouveau == 'oui'
+        uses: actions/deploy-pages@v4
