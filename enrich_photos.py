@@ -8,7 +8,7 @@ le nom et le début du prénom. Auteur et licence viennent de l'API Commons (att
 Sorties : data/raw/photos_locales/<id>.jpg (320 px) et data/raw/photos_locales.json
   { "nom|prénom|naissance" (normalisés) : {"photo": fichier, "credit": "Wikimedia Commons · auteur · licence", "source": page} }
 Les sites des mairies ne sont pas utilisés : formats hétérogènes et photos sans licence de réutilisation connue."""
-import csv, io, json, re, urllib.parse, urllib.request
+import csv, io, json, re, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 import build_local
 
@@ -30,7 +30,8 @@ def wikidata():
     for filtre in ("?p wdt:P106 wd:Q82955 .", "?p wdt:P39 ?poste ."):  # personnalité politique, ou fonction occupée
         q = urllib.parse.urlencode({"query": REQ % filtre})
         for r in csv.DictReader(io.StringIO(http(f"https://query.wikidata.org/sparql?{q}", "text/csv").decode())):
-            lignes[r["p"]] = r
+            if r.get("naiss") and r.get("img"):  # réponse tronquée : dernière ligne incomplète
+                lignes[r["p"]] = r
     return list(lignes.values())
 
 
@@ -52,10 +53,22 @@ def commons(fichiers):
 
 
 def main():
+    prec = RAW / "photos_locales.json"
+    # Les photos changent peu : Wikidata une fois par jour suffit, et sa panne ne bloque pas la mise à jour.
+    if prec.exists() and time.time() - prec.stat().st_mtime < 86400 and "--force" not in sys.argv:
+        print("photos d'élus locaux : celles du jour, gardées")
+        return
+    try:
+        personnes = wikidata()
+    except Exception as e:
+        if not prec.exists():
+            raise
+        print(f"⚠ Wikidata injoignable ({e.__class__.__name__}) : photos précédentes gardées")
+        return
     deps, _, _ = build_local.geographie()
     P = build_local.lire_mandats(deps)
     par_date = {}
-    for r in wikidata():
+    for r in personnes:
         par_date.setdefault(r["naiss"][:10], []).append(r)
     trouves = {}
     for (nom, prenom, naiss), p in P.by_key.items():
