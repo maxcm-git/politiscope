@@ -1,6 +1,6 @@
 # Politiscope — prototype
 
-Transparence des élus français en données ouvertes, inspiré de politicometro.org (Brésil).
+Transparence des élus français en données ouvertes.
 **515 099 personnes** : Président, gouvernement, Parlement, eurodéputés et tous les élus locaux
 (conseillers régionaux, départementaux, communautaires, municipaux, maires, adjoints…).
 Feuille de route complète : `PARITE.md`.
