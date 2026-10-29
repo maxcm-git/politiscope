@@ -1,7 +1,11 @@
 # Mise à jour automatique : toutes les heures, GitHub télécharge les sources officielles, vérifie tout,
-# reconstruit le site s'il y a du nouveau, puis le publie sur GitHub Pages. Sans nouveauté : rien n'est republié.
+# reconstruit le site s'il y a du nouveau, puis le publie sur GitHub Pages. Sans nouveauté : rien n'est republié,
+# sauf après un envoi de code (push) ou un lancement manuel, qui publient toujours.
 name: Mise à jour des données
 on:
+  push:
+    branches: [main]
+    paths-ignore: ["*.md"]
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
@@ -54,11 +58,11 @@ jobs:
             site
           key: donnees-${{ github.run_id }}
       - uses: actions/configure-pages@v5
-        if: steps.maj.outputs.nouveau == 'oui'
+        if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
       - uses: actions/upload-pages-artifact@v3
-        if: steps.maj.outputs.nouveau == 'oui'
+        if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
         with:
           path: site
       - id: publication
-        if: steps.maj.outputs.nouveau == 'oui'
+        if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
         uses: actions/deploy-pages@v4
