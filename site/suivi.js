@@ -137,7 +137,8 @@ async function pageSuivis(qs, j) {
       if (r.erreur) { msg.textContent = `Échec : ${r.erreur}`; return; }
       if (r.verifier) { msg.textContent = "Compte créé : ouvrez l'e-mail de confirmation, puis revenez vous connecter."; return; }
       Suivi.aSuivre = apres;  // l'élu qui a mené ici est suivi dès le retour sur sa fiche
-      location.hash = apres ? `#/p/${apres}` : "#/suivis";
+      const cible = apres ? `#/p/${apres}` : "#/suivis";
+      if (location.hash === cible) route(); else location.hash = cible;  // même adresse : pas de hashchange
     });
     return;
   }
