@@ -239,7 +239,12 @@ def main():
         people = [mk_roster(x) for x in load_json("roster.json")]
     else:
         people = [mk(r, "depute") for r in read("deputes.csv")] + [mk(r, "senateur") for r in read("senateurs.csv")]
-    people += eurodeputes()
+    parl = {(norm(p["prenom"]), norm(p["nom"])) for p in people}
+    eur = eurodeputes()
+    # Mandat européen incompatible avec un siège au Parlement : la chambre fait foi (RNE en retard, sans liste du PE).
+    print("Eurodéputé devenu parlementaire national, ligne européenne retirée :",
+          [f"{p['prenom']} {p['nom']}" for p in eur if (norm(p["prenom"]), norm(p["nom"])) in parl])
+    people += [p for p in eur if (norm(p["prenom"]), norm(p["nom"])) not in parl]
     if (RAW / "executif.json").exists():
         execs = [mk_exec(x) for x in load_json("executif.json")]
         ek = {(norm(x["prenom"]), norm(x["nom"])) for x in execs}

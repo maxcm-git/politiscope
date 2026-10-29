@@ -8,6 +8,7 @@ data/raw/geo/*
 !data/raw/photos_officielles/
 !data/raw/photos_officielles.json
 !data/raw/photos_officielles_rejets.json
+!data/raw/pe_membres.json
 site/*
 !site/index.html
 !site/app.js
