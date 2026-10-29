@@ -40,7 +40,9 @@ const Suivi = {
 
   async creerCompte(email, mdp) {
     if (this.mode !== "en ligne") { this.utilisateur = {email}; this.ecrireLocal(); this.signaler(); return {ok: true}; }
-    const {data, error} = await this.sb.auth.signUp({email, password: mdp});
+    // Retour sur ce site après le lien de confirmation (adresse à autoriser dans Supabase : Redirect URLs).
+    const {data, error} = await this.sb.auth.signUp({email, password: mdp,
+      options: {emailRedirectTo: location.origin + location.pathname}});
     if (error) return {erreur: error.message};
     if (!data.session) return {ok: true, verifier: true};  // e-mail de confirmation envoyé par Supabase
     this.utilisateur = {email, id: data.user.id};
