@@ -1198,7 +1198,7 @@ function route() {
 // Dernière vérification des sources : dernier passage réussi de la mise à jour automatique (toutes les heures, même
 // sans nouveauté, donc sans republication) ; à défaut, l'heure de construction du site (UTC sur le serveur).
 const verifie = d => document.getElementById("maj").innerHTML = `Données officielles — dernière vérification le <b>${d.toLocaleString("fr-FR",
-  {day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"})}</b> · élus locaux au ${esc(META.maj)} · <a href="#/mises-a-jour" style="color:var(--accent)">Mises à jour</a>`;
+  {day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"})}</b> · <a href="#/mises-a-jour" style="color:var(--accent)">Mises à jour</a>`;
 verifie(new Date(String(META.build).replace(/(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/, "$1-$2-$3T$4:$5:$6Z")));
 fetch("https://api.github.com/repos/maxcm-git/politiscope/actions/workflows/mise-a-jour.yml/runs?status=success&per_page=1")
   .then(r => r.ok ? r.json() : null).then(j => j?.workflow_runs?.[0] && verifie(new Date(j.workflow_runs[0].updated_at))).catch(() => {});
