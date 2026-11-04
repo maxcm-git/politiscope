@@ -198,7 +198,10 @@ def main():
     for k, nom in euro:
         pid = pe.get(norm(nom)) or pe.get(norm(" ".join(reversed(nom.split(" ", 1)))))
         out[k] = {"page": f"https://www.europarl.europa.eu/meps/fr/{pid}"} if pid else {}
-        sources[k] = [(f"https://www.europarl.europa.eu/mepphoto/{pid}.jpg", "Parlement européen")] if pid else []
+        # Copie suivie par git en repli : le Parlement européen refuse les serveurs de GitHub.
+        # shortcut: copie figée (data/raw/photos_pe), à rafraîchir à la main pour un nouvel eurodéputé.
+        sources[k] = [(f"https://www.europarl.europa.eu/mepphoto/{pid}.jpg", "Parlement européen"),
+                      ((RAW / "photos_pe" / f"{pid}.jpg").resolve().as_uri(), "Parlement européen")] if pid else []
     for x in execs:
         k = f"{norm(x['prenom'])}|{norm(x['nom'])}"
         a = an_details.get(k)

@@ -170,6 +170,13 @@ Nom « Politiscope » = titre de travail, à valider.
   Sans configuration (`site/config.js` vide) : *mode local de test*, compte et suivis gardés dans le navigateur.
   En ligne : Supabase (comptes + table `suivis`, schéma `supabase.sql`, chacun ne voit que ses lignes), clés dans `site/config.js`.
   Consentement explicite à la création du compte (la liste des élus suivis peut révéler une opinion politique, RGPD art. 9).
+  « Supprimer mon compte » efface compte, suivis et préférences (fonction `supprimer_mon_compte`, RGPD art. 17).
+- **Alertes par e-mail** (`alertes.py`, après chaque mise à jour) : case à cocher sur « Mes élus » (table `preferences`) ;
+  au plus un résumé par jour : nouvelle fonction ou fin de fonction, nouveaux scrutins à l'Assemblée, nouvelle déclaration
+  HATVP, élu qui n'est plus en fonction. Envoi par Brevo (gratuit jusqu'à 300 e-mails/jour). La liste des destinataires
+  n'est lisible qu'avec le jeton `ALERTES_JETON` (créé par `supabase.sql`), jamais avec la clé publique du site.
+  Réglages GitHub (Settings > Secrets and variables > Actions) : secrets `ALERTES_JETON`, `BREVO_CLE`, variable
+  `ALERTES_EXPEDITEUR`. Sans eux : rien n'est envoyé. Essai sans envoi : `python3 alertes.py --essai fr/<slug>`.
 - **Image** (`site/partage.js`, bouton « Image » en haut) : story 1080×1920 ou carré 1080×1080, à partir des puces,
   chiffres et jauges de la page ; partage par la feuille de partage du téléphone, ou téléchargement. Tout se fait dans le navigateur.
 
@@ -179,6 +186,10 @@ Nom « Politiscope » = titre de travail, à valider.
 - `.github/workflows/mise-a-jour.yml` : toutes les heures, `update.py` (sans nouveauté : arrêt, rien n'est republié) ;
   sinon reconstruction, contrôles, publication sur GitHub Pages. Le cache GitHub garde téléchargements et site construit ;
   premier passage (ou « Run workflow » avec « complet ») : tout est retéléchargé (`--force`).
+- Le site du Parlement européen refuse les serveurs de GitHub : une copie de sa liste (`data/raw/pe_membres.json`)
+  et des photos des eurodéputés (`data/raw/photos_pe/`) est versionnée en repli ; à rafraîchir à la main depuis un Mac.
+- Wikidata (photos d'élus locaux) n'est interrogé qu'une fois par jour ; en cas de panne, les photos précédentes restent.
+- Serveur `ubuntu-24.04` fixé (Python 3.12 garanti), actions GitHub en Node 24.
 - Versionnés : le code, `site/geo/` (cartes, refaites à la main une fois par an avec `update.py --geo`, contours dans
   `data/_cache/contours/`), `data/raw/geo/` (circonscriptions 2017, contours régions et départements), portraits officiels
   relus (`data/raw/photos_officielles*`). Le reste est régénéré (`.gitignore`).

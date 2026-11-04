@@ -8,7 +8,7 @@ const SUPA_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"
 const CLE_LOCALE = "politiscope.suivi";
 
 const Suivi = {
-  mode: "local", sb: null, utilisateur: null, liste: {},  // liste : "shard/slug" -> {prenom, nom, f, lieu, photo}
+  mode: "local", sb: null, utilisateur: null, liste: {}, alertes: false,  // liste : "shard/slug" -> {prenom, nom, f, lieu, photo}
 
   async init() {
     const cfg = window.POLITISCOPE_CONFIG || {};
@@ -34,6 +34,8 @@ const Suivi = {
     if (!this.sb || !this.utilisateur) { this.liste = {}; return; }
     const {data, error} = await this.sb.from("suivis").select("personne, libelle");
     if (!error) this.liste = Object.fromEntries(data.map(r => [r.personne, r.libelle]));
+    const pref = await this.sb.from("preferences").select("alertes").maybeSingle();
+    this.alertes = !!pref.data?.alertes;
   },
   est(id) { return id in this.liste; },
   nombre() { return Object.keys(this.liste).length; },
@@ -60,9 +62,28 @@ const Suivi = {
   },
   async deconnexion() {
     if (this.sb) await this.sb.auth.signOut();
-    this.utilisateur = null;
+    this.utilisateur = null; this.alertes = false;
     if (this.mode !== "en ligne") { this.liste = {}; try { localStorage.removeItem(CLE_LOCALE); } catch {} } else this.liste = {};
     this.signaler();
+  },
+  // Résumé quotidien par e-mail (alertes.py) : uniquement si la personne coche la case.
+  async reglerAlertes(on) {
+    if (this.mode !== "en ligne") return false;
+    const {error} = await this.sb.from("preferences").upsert({user_id: this.utilisateur.id, alertes: on, maj_le: new Date().toISOString()});
+    if (!error) this.alertes = on;
+    return !error;
+  },
+  // Effacement complet (RGPD) : compte, suivis et préférences (fonction supprimer_mon_compte, supabase.sql).
+  async supprimerCompte() {
+    if (this.mode === "en ligne") {
+      const {error} = await this.sb.rpc("supprimer_mon_compte");
+      if (error) return false;
+      await this.sb.auth.signOut().catch(() => {});
+    }
+    this.utilisateur = null; this.liste = {}; this.alertes = false;
+    try { localStorage.removeItem(CLE_LOCALE); } catch {}
+    this.signaler();
+    return true;
   },
   async basculer(id, info) {
     const suivre = !this.est(id);
@@ -122,7 +143,7 @@ async function pageSuivis(qs, j) {
         <label>Adresse e-mail<input type="email" name="email" required autocomplete="email"></label>
         <label>Mot de passe (8 caractères au moins)<input type="password" name="mdp" minlength="8" required autocomplete="current-password"></label>
         <label class="case"><input type="checkbox" name="accord" required> J'accepte que Politiscope enregistre mon adresse e-mail et la liste des
-          élus que je suis, pour me les afficher. Je peux tout supprimer à tout moment.</label>
+          élus que je suis, pour me les afficher (et m'envoyer des alertes si je les demande). Je peux tout supprimer à tout moment.</label>
         <div class="actions-lieu"><button class="btn" name="action" value="creer">Créer mon compte</button>
           <button class="btn ghost" name="action" value="connexion" formnovalidate>J'ai déjà un compte</button></div>
         <p id="f-msg" class="muted" role="status"></p></form>`;
@@ -149,9 +170,26 @@ async function pageSuivis(qs, j) {
     ${l.length ? `<p class="muted">${l.length} élu${l.length > 1 ? "s" : ""} suivi${l.length > 1 ? "s" : ""}, de A à Z. Touchez une carte pour ouvrir la fiche.</p>
       <div id="suivis-liste">${visages(tri(l))}</div>`
       : `<p class="vide">Vous ne suivez encore personne. Ouvrez la fiche d'un élu et touchez <b>☆ Suivre</b>.</p>`}
+    <form class="formulaire" style="max-width:640px"><label class="case"><input type="checkbox" id="alertes"${Suivi.alertes ? " checked" : ""}${Suivi.mode !== "en ligne" ? " disabled" : ""}>
+      Me prévenir par e-mail, une fois par jour au plus, quand un élu que je suis change de fonction, vote à l'Assemblée
+      ou publie une déclaration d'intérêts.${Suivi.mode !== "en ligne" ? " (Indisponible en mode local de test.)" : ""}</label>
+      <p id="alertes-msg" class="muted" role="status"></p></form>
     <div class="actions-lieu"><a class="btn" href="#/annuaire">Trouver un élu</a><button class="btn ghost" id="deco">Se déconnecter</button>
-      ${l.length ? `<button class="btn ghost" id="vider">Ne plus suivre personne</button>` : ""}</div>
-    ${src("Prochaine étape prévue : être prévenu par e-mail quand un élu suivi vote, change de fonction ou publie une déclaration.")}`;
+      ${l.length ? `<button class="btn ghost" id="vider">Ne plus suivre personne</button>` : ""}
+      <button class="btn ghost" id="supprimer">Supprimer mon compte</button></div>`;
+  document.getElementById("alertes").addEventListener("change", async e => {
+    const msg = document.getElementById("alertes-msg"), on = e.target.checked;
+    e.target.disabled = true;
+    const ok = await Suivi.reglerAlertes(on);
+    e.target.disabled = false;
+    if (!ok) e.target.checked = !on;
+    msg.textContent = !ok ? "Échec de l'enregistrement, réessayez." : on ? "C'est noté : vous recevrez un résumé quand il y a du nouveau." : "Alertes arrêtées.";
+  });
+  document.getElementById("supprimer").addEventListener("click", async () => {
+    if (!confirm("Supprimer définitivement votre compte, la liste de vos élus suivis et vos alertes ?")) return;
+    if (await Suivi.supprimerCompte()) { alert("Votre compte et toutes ses données ont été supprimés."); location.hash = "#/"; }
+    else alert("La suppression a échoué. Réessayez, ou écrivez-nous (adresse en bas de page).");
+  });
   document.getElementById("deco").addEventListener("click", async () => { await Suivi.deconnexion(); pageSuivis("", j); });
   document.getElementById("vider")?.addEventListener("click", async () => {
     for (const id of Object.keys(Suivi.liste)) await Suivi.basculer(id, Suivi.liste[id]);

@@ -274,5 +274,17 @@
 "credit": "© www.departement41.fr",
 "source": "https://www.departement41.fr/",
 "cle": "d41/philippe-gouet"
+},
+"petit|marieagnes|1962-01-24": {
+"photo": "petit-marieagnes-1962-01-24.jpg",
+"credit": "© www.hauteloire.fr",
+"source": "https://www.hauteloire.fr/-Le-Conseil-General-.html",
+"cle": "d43/marie-agnes-petit"
+},
+"dumont|jerome|1977-03-15": {
+"photo": "dumont-jerome-1977-03-15.jpg",
+"credit": "© www.meuse.fr",
+"source": "https://www.meuse.fr/le-departement/vous-represente/organigramme-des-conseillers-departementaux",
+"cle": "d55/jerome-dumont"
 }
 }

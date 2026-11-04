@@ -19,7 +19,7 @@ from build_local import norm, reduire
 RAW = Path(__file__).parent / "data" / "raw"
 OUT = RAW / "photos_officielles"
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh) Politiscope-prototype/0.1 (contact@politiscope.example)"}
-PAGES = re.compile(r"maire|presid|elus?\b|elu-|conseil-municipal|conseil-departemental|equipe|majorit|institution", re.I)
+PAGES = re.compile(r"maire|presid|elus?\b|elu-|conseil|equipe|majorit|institution|executif|assemblee|gouvernance|vie-politique|mairie|portrait|biographie", re.I)
 
 
 class Page(HTMLParser):
@@ -98,7 +98,7 @@ def chercher(c):
             u = urllib.parse.urljoin(base, h).split("#")[0]
             if urllib.parse.urlparse(u).netloc == dom and PAGES.search(urllib.parse.urlparse(u).path) and u not in a_voir:
                 a_voir.append(u)
-        for u in a_voir[:14]:
+        for u in a_voir[:25]:
             page_html = html if u == base else lire(u)[0]
             if not page_html or u in vus:
                 continue

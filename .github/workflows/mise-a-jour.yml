@@ -23,19 +23,20 @@ concurrency:
   cancel-in-progress: false
 jobs:
   maj:
-    runs-on: ubuntu-latest
+    # Version fixée : ubuntu-latest passe à Ubuntu 26, où Python 3.12 n'est pas garanti.
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     environment:
       name: github-pages
       url: ${{ steps.publication.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install pillow==10.4.0
       # Données du passage précédent (sources, archives, site construit) : évite de tout retélécharger.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: cache
         with:
           path: |
@@ -49,20 +50,28 @@ jobs:
       - name: Mise à jour (téléchargement, vérification, reconstruction, contrôles)
         id: maj
         run: python update.py ${{ (steps.cache.outputs.cache-matched-key == '' || inputs.complet) && '--force' || '' }}
-      - uses: actions/cache/save@v4
-        if: steps.maj.outputs.nouveau == 'oui'
+      # Alertes par e-mail aux personnes qui suivent un élu (une fois par jour au plus ; inactif sans les secrets).
+      - name: Alertes par e-mail
+        id: alertes
+        run: python alertes.py
+        env:
+          ALERTES_JETON: ${{ secrets.ALERTES_JETON }}
+          BREVO_CLE: ${{ secrets.BREVO_CLE }}
+          ALERTES_EXPEDITEUR: ${{ vars.ALERTES_EXPEDITEUR }}
+      - uses: actions/cache/save@v6
+        if: steps.maj.outputs.nouveau == 'oui' || steps.alertes.outputs.etat == 'modifie'
         with:
           path: |
             data/_cache
             data/raw
             site
           key: donnees-${{ github.run_id }}
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
         with:
           path: site
       - id: publication
         if: steps.maj.outputs.nouveau == 'oui' || github.event_name != 'schedule'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
